@@ -1,0 +1,18 @@
+project_name: elecciones-2025
+description: "Seguimiento del conteo de votos para las elecciones generales 2025"
+author: Andres Chirinos
+created_date: 2025-08-17
+version: 1.0.0
+
+data_dir: "data"
+output_dir: "output"
+
+github_actions:
+  artifact:
+    logs:
+      retention_days: 14
+    data:
+      retention_days: 14
+
+drive:
+  folder_id: "10EmosOaufxyZRRwSvEPSzjNMNqMBVxPx"
