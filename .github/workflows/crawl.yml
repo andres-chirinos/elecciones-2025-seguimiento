@@ -1,0 +1,61 @@
+name: ETL Pipeline
+
+on:
+  #schedule:
+  #  - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  extract:
+    name: Extract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Read Config
+        run: |
+          python -c """
+          import yaml, datetime
+
+          # Config variables
+          def flatten_config(prefix, config):
+            for key, value in config.items():
+              if isinstance(value, dict):
+                flatten_config(f'{prefix}{key.upper()}_', value)
+              else:
+                print(f'{prefix}{key.upper()}={value}')
+
+          with open('config.yml') as f:
+            config = yaml.safe_load(f)
+
+          flatten_config('', config)
+
+          # Runtime variables
+          timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+          print(f'TIMESTAMP={timestamp}')
+          """ >> $GITHUB_ENV
+
+      - name: Run Browsertrix Crawler
+        run: |
+          docker run -v ${{ github.workspace }}/crawl-config.yaml:/app/crawl-config.yaml -v ${{ github.workspace }}/data:/crawls/ webrecorder/browsertrix-crawler crawl --config /app/crawl-config.yaml --generateWACZ
+
+      - name: Upload raw data
+        id: upload-raw-data-step
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-data
+          path: ./*
+          retention-days: ${{ env.GITHUB_ACTIONS_ARTIFACT_DATA_RETENTION_DAYS }}
+
+      - name: Zip raw data
+        run: |
+          zip -r raw-data.zip ./data/
+
+      - name: Upload to Google Drive
+        uses: willo32/google-drive-upload-action@v1
+        with:
+          target: raw-data.zip
+          credentials: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
+          parent_folder_id: 1DnlHVc6NwT7UshJBHEbQieVdq8YLx4iJ
+          name: raw-data_${{ env.TIMESTAMP }}.zip
