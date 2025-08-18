@@ -50,7 +50,7 @@ jobs:
 
       - name: Run Browsertrix Crawler
         run: |
-          docker run -v ${{ github.workspace }}/data:/crawls/ webrecorder/browsertrix-crawler crawl --url ${{ matrix.url }} --generateWACZ
+          docker run -v ${{ github.workspace }}/data:/crawls/ webrecorder/browsertrix-crawler crawl --url ${{ matrix.url }} --generateWACZ --limit 1
 
       - name: Upload raw data
         id: upload-raw-data-step
