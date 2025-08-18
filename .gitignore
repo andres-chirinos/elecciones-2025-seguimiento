@@ -163,3 +163,4 @@ cython_debug/
 historic/01_extract.ipynb
 
 *.csv
+*.zip
