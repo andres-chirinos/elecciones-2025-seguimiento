@@ -57,17 +57,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: raw-data-${{ env.URL_SLUG }}
-          path: ./*
+          path: ./data/*
           retention-days: ${{ env.GITHUB_ACTIONS_ARTIFACT_DATA_RETENTION_DAYS }}
 
       - name: Zip raw data
         run: |
-          zip -r raw-data.zip ./data/
-          name: raw-data_${{ env.TIMESTAMP }}_${{ env.URL_SLUG }}.zip
+          zip -r raw-data-${{ env.TIMESTAMP }}-${{ env.URL_SLUG }}.zip ./data/
+
       - name: Upload to Google Drive
         uses: willo32/google-drive-upload-action@v1
         with:
-          target: raw-data.zip
+          target: raw-data-${{ env.TIMESTAMP }}-${{ env.URL_SLUG }}.zip
           credentials: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
           parent_folder_id: 1DnlHVc6NwT7UshJBHEbQieVdq8YLx4iJ
-          name: raw-data_${{ env.TIMESTAMP }}_${{ env.URL_SLUG }}.zip
+          name: raw-data_${{ env.TIMESTAMP }}-${{ env.URL_SLUG }}.zip
