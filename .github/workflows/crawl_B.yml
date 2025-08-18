@@ -1,0 +1,72 @@
+name: Crawl computo
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  extract:
+    name: Extract
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        url:
+          - https://computo.oep.org.bo/
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Read Config
+        run: |
+          python -c """
+          import yaml, datetime
+          import os
+
+          # Config variables
+          def flatten_config(prefix, config):
+            for key, value in config.items():
+              if isinstance(value, dict):
+                flatten_config(f'{prefix}{key.upper()}_', value)
+              else:
+                print(f'{prefix}{key.upper()}={value}')
+
+          with open('config.yml') as f:
+            config = yaml.safe_load(f)
+
+          flatten_config('', config)
+
+          # Runtime variables
+          timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+          print(f'TIMESTAMP={timestamp}')
+          # Generate a URL slug for artifact naming
+          url = os.environ.get('URL', '')
+          url_slug = url.replace('https://', '').replace('/', '')
+          print(f'URL_SLUG={url_slug}')
+          """ >> $GITHUB_ENV
+        env:
+          URL: ${{ matrix.url }}
+
+      - name: Run Browsertrix Crawler
+        run: |
+          docker run -v ${{ github.workspace }}/data:/crawls/ webrecorder/browsertrix-crawler crawl --url ${{ matrix.url }} --generateWACZ --limit 1
+
+      - name: Upload raw data
+        id: upload-raw-data-step
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-data-${{ env.URL_SLUG }}
+          path: ./data/*
+          retention-days: ${{ env.GITHUB_ACTIONS_ARTIFACT_DATA_RETENTION_DAYS }}
+
+      - name: Zip raw data
+        run: |
+          zip -r raw-data-${{ env.TIMESTAMP }}-${{ env.URL_SLUG }}.zip ./data/
+
+      - name: Upload to Google Drive
+        uses: willo32/google-drive-upload-action@v1
+        with:
+          target: raw-data-${{ env.TIMESTAMP }}-${{ env.URL_SLUG }}.zip
+          credentials: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
+          parent_folder_id: 1DnlHVc6NwT7UshJBHEbQieVdq8YLx4iJ
+          name: raw-data_${{ env.TIMESTAMP }}-${{ env.URL_SLUG }}.zip
