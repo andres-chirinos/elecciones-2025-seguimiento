@@ -22,6 +22,7 @@ jobs:
         run: |
           python -c """
           import yaml, datetime
+          import os
 
           # Config variables
           def flatten_config(prefix, config):
@@ -39,7 +40,13 @@ jobs:
           # Runtime variables
           timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
           print(f'TIMESTAMP={timestamp}')
+          # Generate a URL slug for artifact naming
+          url = os.environ.get('URL', '')
+          url_slug = url.replace('https://', '').replace('/', '')
+          print(f'URL_SLUG={url_slug}')
           """ >> $GITHUB_ENV
+        env:
+          URL: ${{ matrix.url }}
 
       - name: Run Browsertrix Crawler
         run: |
@@ -49,18 +56,18 @@ jobs:
         id: upload-raw-data-step
         uses: actions/upload-artifact@v4
         with:
-          name: raw-data-${{ matrix.url }}
+          name: raw-data-${{ env.URL_SLUG }}
           path: ./*
           retention-days: ${{ env.GITHUB_ACTIONS_ARTIFACT_DATA_RETENTION_DAYS }}
 
       - name: Zip raw data
         run: |
           zip -r raw-data.zip ./data/
-
+          name: raw-data_${{ env.TIMESTAMP }}_${{ env.URL_SLUG }}.zip
       - name: Upload to Google Drive
         uses: willo32/google-drive-upload-action@v1
         with:
           target: raw-data.zip
           credentials: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
           parent_folder_id: 1DnlHVc6NwT7UshJBHEbQieVdq8YLx4iJ
-          name: raw-data_${{ env.TIMESTAMP }}_${{ matrix.url }}.zip
+          name: raw-data_${{ env.TIMESTAMP }}_${{ env.URL_SLUG }}.zip
