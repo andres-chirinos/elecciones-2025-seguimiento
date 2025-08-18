@@ -49,7 +49,7 @@ jobs:
 
       - name: Run Browsertrix Crawler
         run: |
-          docker run -v ${{ github.workspace }}/data:/crawls/ webrecorder/browsertrix-crawler crawl --url ${{ matrix.url }} --generateWACZ --delay 30 --blockads --adBlockMessage "AD BLOCKED" --blockMessage "URL BLOCKED" --allowHashUrls --workers 1 --scopeType "page"
+          docker run -v ${{ github.workspace }}/data:/crawls/ webrecorder/browsertrix-crawler crawl --url ${{ matrix.url }} --generateWACZ --delay 30 --blockads --adBlockMessage "AD BLOCKED" --blockMessage "URL BLOCKED" --allowHashUrls --workers 1 --scopeType "page" --pageLimit 1
 
       - name: Upload raw data
         id: upload-raw-data-step
